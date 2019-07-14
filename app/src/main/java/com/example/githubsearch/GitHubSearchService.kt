@@ -14,4 +14,7 @@ interface GitHubSearchService {
 //        @Query("page")      page : Int,
         @Query("sort")      sort : String,
         @Query("order")     order : String ) : Call<BaseModel>
+
+    // todo you can return an observable and push it where you want
 }
+

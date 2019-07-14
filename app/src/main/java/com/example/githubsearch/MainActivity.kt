@@ -12,13 +12,23 @@ import android.view.Menu
 import android.widget.EditText
 import com.example.githubsearch.model.BaseModel
 import com.example.githubsearch.model.Items
+import io.reactivex.android.plugins.RxAndroidPlugins
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
+/* todo 1- complete the task */
+/*todo enhance design --> check the next urls to help you
+* https://www.uplabs.com
+* https://androidniceties.tumblr.com
+* http://wsdesign.in
+* https://dribbble.com/tags/material_design
+* https://www.sketchappsources.com/tag/android.html
+* https://colorwise.io */
 
 class MainActivity : AppCompatActivity() {
 
@@ -52,7 +62,11 @@ class MainActivity : AppCompatActivity() {
             val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
             searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
             searchView.setIconifiedByDefault(false)
+
         }
+
+        // todo while you already using rx in this project you can use it to enhance search michanism
+        // todo check ObServableSearchView.kt and investigate in some operators like interval, throttle, debounce
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextChange(newText: String): Boolean {
@@ -70,6 +84,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun beginSearch(query: String) {
+        // todo fetching data is repository or interactor  responsibility- refactor it
+        // todo building retrofit api should be in the ApiClient.kt and rename it to something more meaningful
+
         val retrofit = Retrofit.Builder()
             .addCallAdapterFactory(
                 RxJava2CallAdapterFactory.create()
@@ -77,6 +94,7 @@ class MainActivity : AppCompatActivity() {
             .addConverterFactory(
                 GsonConverterFactory.create()
             )
+
             .baseUrl("https://api.github.com/")
             .build()
         viewHolder = ChapterAdapter.ViewHolder(searchView)
