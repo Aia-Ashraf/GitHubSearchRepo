@@ -18,10 +18,16 @@ import io.reactivex.schedulers.Schedulers
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import io.reactivex.ObservableSource
+import android.arch.lifecycle.Transformations.switchMap
+import android.support.design.widget.Snackbar
+import io.reactivex.functions.Consumer
+import io.reactivex.functions.Predicate
+import java.util.concurrent.TimeUnit
 
 
 /* todo 1- complete the task */
-/*todo enhance design --> check the next urls to help you
+/*
 * https://www.uplabs.com
 * https://androidniceties.tumblr.com
 * http://wsdesign.in
@@ -49,6 +55,42 @@ class MainActivity : AppCompatActivity() {
         adapter = ChapterAdapter(this, Items.getList())
         recyclerView.adapter = adapter
         mCompositeDisposable = CompositeDisposable()
+
+        ObServableSearchView.of(searchView)
+            .debounce(300, TimeUnit.MILLISECONDS)
+            .filter(object : Predicate<String> {
+                @Throws(Exception::class)
+                override fun test(text: String): Boolean {
+                    return if (text.isEmpty()) {
+                        Log.d(TAG, "isEmpty: $text")
+
+                        false
+                    } else {
+                        Log.d(TAG, "onQueryTextSubmit: $text")
+                        beginSearch(text)
+                        true
+                    }
+                }
+            })
+            .distinctUntilChanged()
+      /*     .switchMap(object : Function<String, ObservableSource<String>>() {
+                @Throws(Exception::class)
+                fun apply(query: String): ObservableSource<String> {
+                    return dataFromNetwork(query)
+                }
+            })*/
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnEach {
+            }
+            .doOnError {Log.d(TAG,"Error")
+            }
+            .retry()
+            .subscribe({
+                Log.d(TAG,"subs")
+            }, {
+                Log.d(TAG, it.toString())
+            })
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -61,22 +103,21 @@ class MainActivity : AppCompatActivity() {
             searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
             searchView.setIconifiedByDefault(false)
         }
-
         // todo while you already using rx in this project you can use it to enhance search michanism
         // todo check ObServableSearchView.kt and investigate in some operators like interval, throttle, debounce
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+
+   /*     searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextChange(newText: String): Boolean {
                 Log.d(TAG, "onQueryTextChange: $newText")
                 return false
             }
-
             override fun onQueryTextSubmit(query: String): Boolean {
                 Log.d(TAG, "onQueryTextSubmit: $query")
                 beginSearch(query)
                 return false
             }
-        })
+        })*/
         return true
     }
 
@@ -109,4 +150,5 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, error.localizedMessage)
         Toast.makeText(this, "Error ${error.localizedMessage}", Toast.LENGTH_SHORT).show()
     }
+
 }
