@@ -21,6 +21,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import io.reactivex.ObservableSource
 import android.arch.lifecycle.Transformations.switchMap
 import android.support.design.widget.Snackbar
+import com.example.githubsearch.ChapterAdapter.*
 import io.reactivex.functions.Consumer
 import io.reactivex.functions.Predicate
 import java.util.concurrent.TimeUnit
@@ -41,7 +42,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var recyclerView: RecyclerView
     lateinit var layoutManager: LinearLayoutManager
     lateinit var adapter: ChapterAdapter
-    lateinit var viewHolder: ChapterAdapter.ViewHolder
+    lateinit var viewHolder: ViewHolder
     lateinit var searchView: SearchView
     private var mCompositeDisposable: CompositeDisposable? = null
 
@@ -131,7 +132,7 @@ class MainActivity : AppCompatActivity() {
             .baseUrl("https://api.github.com/")
             .build()
 
-        viewHolder = ChapterAdapter.ViewHolder(searchView)
+        viewHolder = ViewHolder(searchView)
 
         val gHubAPI = retrofit.create(GitHubSearchService::class.java)
         mCompositeDisposable?.add(
