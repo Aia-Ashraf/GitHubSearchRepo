@@ -41,7 +41,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var recyclerView: RecyclerView
     lateinit var layoutManager: LinearLayoutManager
     lateinit var adapter: ChapterAdapter
+    lateinit var viewHolder: ChapterAdapter.ViewHolder
     lateinit var searchView: SearchView
+    private var mCompositeDisposable: CompositeDisposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +54,43 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = layoutManager
         adapter = ChapterAdapter(this, Items.getList())
         recyclerView.adapter = adapter
+        mCompositeDisposable = CompositeDisposable()
+
+        ObServableSearchView.of(searchView)
+            .debounce(300, TimeUnit.MILLISECONDS)
+            .filter(object : Predicate<String> {
+                @Throws(Exception::class)
+                override fun test(text: String): Boolean {
+                    return if (text.isEmpty()) {
+                        Log.d(TAG, "isEmpty: $text")
+
+                        false
+                    } else {
+                        Log.d(TAG, "onQueryTextSubmit: $text")
+                        beginSearch(text)
+                        true
+                    }
+                }
+            })
+            .distinctUntilChanged()
+      /*     .switchMap(object : Function<String, ObservableSource<String>>() {
+                @Throws(Exception::class)
+                fun apply(query: String): ObservableSource<String> {
+                    return dataFromNetwork(query)
+                }
+            })*/
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnEach {
+            }
+            .doOnError {Log.d(TAG,"Error")
+            }
+            .retry()
+            .subscribe({
+                Log.d(TAG,"subs")
+            }, {
+                Log.d(TAG, it.toString())
+            })
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -82,12 +121,34 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    fun beginSearch(query: String) {
+        // todo fetching data is repository or interactor  responsibility- refactor it
+        // todo building retrofit api should be in the ApiClient.kt and rename it to something more meaningful
 
-    fun  handleResponse(baseModel: BaseModel) {
+        val retrofit = Retrofit.Builder()
+            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
+            .baseUrl("https://api.github.com/")
+            .build()
+
+        viewHolder = ChapterAdapter.ViewHolder(searchView)
+
+        val gHubAPI = retrofit.create(GitHubSearchService::class.java)
+        mCompositeDisposable?.add(
+            gHubAPI.searchGitHubRepo(query + "language:assembly", "stars", "desc")
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(this::handleResponse, this::handleError))
+    }
+
+    fun handleResponse(baseModel: BaseModel) {
         Log.d(TAG, "onResponse()" + baseModel)
         baseModel?.items?.let { adapter.updateItems(it) }
     }
 
-
+    fun handleError(error: Throwable) {
+        Log.d(TAG, error.localizedMessage)
+        Toast.makeText(this, "Error ${error.localizedMessage}", Toast.LENGTH_SHORT).show()
+    }
 
 }
